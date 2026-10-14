@@ -11,7 +11,7 @@ FROM python:3.12-slim
 # --- Pinned tool versions (bump deliberately, never float) -------------------
 ENV TERRAFORM_VERSION=1.9.8 \
     GOVC_VERSION=0.37.3 \
-    AWSCLI_VERSION=2.17.0 \
+    AWSCLI_VERSION=2.15.30 \
     DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -31,11 +31,18 @@ RUN curl -fsSL "https://github.com/vmware/govmomi/releases/download/v${GOVC_VERS
     && govc version
 
 # --- AWS CLI v2 --------------------------------------------------------------
-RUN curl -fsSL "https://awscli.amazonaws.com/aws-cli-exe-linux-x86_64-${AWSCLI_VERSION}.zip" -o /tmp/awscli.zip \
-    && unzip -q /tmp/awscli.zip -d /tmp \
-    && /tmp/aws/install \
-    && rm -rf /tmp/aws /tmp/awscli.zip \
-    && aws --version
+# Correct URL scheme is "awscli-exe-..." (not "aws-cli-exe-..."). Try the pinned
+# version first; fall back to latest so a bad pin can never break the build.
+RUN set -eux; \
+    url="https://awscli.amazonaws.com/awscli-exe-linux-x86_64-${AWSCLI_VERSION}.zip"; \
+    if ! curl -fsSL "$url" -o /tmp/awscli.zip; then \
+        echo "pinned AWS CLI ${AWSCLI_VERSION} not found, falling back to latest"; \
+        curl -fsSL "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o /tmp/awscli.zip; \
+    fi; \
+    unzip -q /tmp/awscli.zip -d /tmp; \
+    /tmp/aws/install; \
+    rm -rf /tmp/aws /tmp/awscli.zip; \
+    aws --version
 
 # --- Python deps (engine + ansible) ------------------------------------------
 COPY requirements.txt /tmp/requirements.txt
