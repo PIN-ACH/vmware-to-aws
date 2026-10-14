@@ -1,0 +1,77 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# MAPPING RULES: vSphere → AWS
+# ─────────────────────────────────────────────────────────────────────────────
+# Deterministic rules that translate discovered VMware attributes into AWS
+# constructs. Editing this file (not the code) tunes how migrations are sized —
+# this is a key "product configuration" surface customers can adjust.
+# ─────────────────────────────────────────────────────────────────────────────
+
+region: eu-west-2
+
+# ---- Compute sizing ---------------------------------------------------------
+# VM (vCPU, memory) is matched to the smallest instance type that satisfies BOTH
+# cpu >= vcpu and memory >= memory_mb. Ordered smallest → largest.
+instance_types:
+  - type: t3.small     # 2 vCPU / 2 GB
+    vcpu: 2
+    memory_mb: 2048
+  - type: t3.medium    # 2 vCPU / 4 GB
+    vcpu: 2
+    memory_mb: 4096
+  - type: t3.large     # 2 vCPU / 8 GB
+    vcpu: 2
+    memory_mb: 8192
+  - type: t3.xlarge    # 4 vCPU / 16 GB
+    vcpu: 4
+    memory_mb: 16384
+  - type: m5.xlarge    # 4 vCPU / 16 GB (compute-steady)
+    vcpu: 4
+    memory_mb: 16384
+  - type: m5.2xlarge   # 8 vCPU / 32 GB
+    vcpu: 8
+    memory_mb: 32768
+
+# ---- Storage ----------------------------------------------------------------
+disk_types:
+  ssd: gp3
+  hdd: st1
+  default: gp3
+
+# ---- Guest OS → AMI ---------------------------------------------------------
+# AMI resolved at apply time via SSM public parameters (no hardcoded AMI IDs).
+ami_ssm_parameters:
+  ubuntu-22.04: /aws/service/canonical/ubuntu/server/22.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+  ubuntu-20.04: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+  amazon-linux-2023: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-default-x86_64
+
+# ---- Network zone → subnet behavior -----------------------------------------
+zones:
+  public:
+    map_public_ip: true
+    route_to_igw: true
+  private:
+    map_public_ip: false
+    route_to_nat: true
+
+# ---- Security group rules per role ------------------------------------------
+# Minimal, demo-safe defaults. Real deployments tighten these further.
+security_groups:
+  web:
+    ingress:
+      - { port: 80,  proto: tcp, cidr: 0.0.0.0/0,   desc: "HTTP from internet" }
+      - { port: 443, proto: tcp, cidr: 0.0.0.0/0,   desc: "HTTPS from internet" }
+      - { port: 22,  proto: tcp, cidr: 10.0.0.0/16, desc: "SSH from VPC only" }
+  app:
+    ingress:
+      - { port: 8080, proto: tcp, source_role: web,  desc: "API from web tier" }
+      - { port: 22,   proto: tcp, cidr: 10.0.0.0/16, desc: "SSH from VPC only" }
+  db:
+    ingress:
+      - { port: 5432, proto: tcp, source_role: app,  desc: "Postgres from app tier" }
+      - { port: 22,   proto: tcp, cidr: 10.0.0.0/16, desc: "SSH from VPC only" }
+
+# ---- Global tags applied to every generated resource -----------------------
+default_tags:
+  ManagedBy: vmware-to-aws-engine
+  Migration: replatform
+  Environment: demo

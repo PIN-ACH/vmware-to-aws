@@ -1,0 +1,96 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# INTERMEDIATE MIGRATION SPEC (spec.yaml)
+# ─────────────────────────────────────────────────────────────────────────────
+# This is the heart of the product. Discovery produces raw vSphere data;
+# normalize.py converts it into THIS canonical format; generate.py reads ONLY
+# this file to emit Terraform + Ansible. Keeping a clean intermediate spec means
+# the source (VMware) and the target (AWS) are decoupled — you could later add a
+# Hyper-V or KVM discoverer without touching the code generators.
+#
+# This sample describes a classic 3-tier Linux application (web + app + database)
+# as discovered from ESXi. It doubles as the cached demo inventory.
+# ─────────────────────────────────────────────────────────────────────────────
+
+metadata:
+  source: esxi
+  vcenter: lab-vcenter.local
+  discovered_at: "2026-10-14T11:00:00Z"
+  project: demo-3tier
+  target_region: eu-west-2
+
+# Logical networks discovered on the vSphere side (port groups / VLANs).
+# These are mapped to VPC subnets by engine/mapping.yaml.
+networks:
+  - name: pg-web           # vSphere port group
+    vlan: 100
+    cidr: 10.0.10.0/24
+    zone: public           # public|private — drives subnet + routing
+  - name: pg-app
+    vlan: 110
+    cidr: 10.0.20.0/24
+    zone: private
+  - name: pg-db
+    vlan: 120
+    cidr: 10.0.30.0/24
+    zone: private
+
+# Each VM discovered on ESXi. CPU/RAM map to an EC2 instance type; disks map to
+# EBS volumes; nics map to subnet placement + security groups; services drive
+# the Ansible role selection.
+vms:
+  - name: web01
+    guest_os: ubuntu-22.04
+    cpu: 2
+    memory_mb: 4096
+    role: web                      # web|app|db — selects Ansible role
+    disks:
+      - label: root
+        size_gb: 40
+        type: ssd
+    nics:
+      - network: pg-web
+        ip: 10.0.10.11
+    services:
+      - nginx
+    tags:
+      tier: web
+      app: demo-3tier
+
+  - name: app01
+    guest_os: ubuntu-22.04
+    cpu: 4
+    memory_mb: 8192
+    role: app
+    disks:
+      - label: root
+        size_gb: 60
+        type: ssd
+    nics:
+      - network: pg-app
+        ip: 10.0.20.11
+    services:
+      - demo-api
+    tags:
+      tier: app
+      app: demo-3tier
+
+  - name: db01
+    guest_os: ubuntu-22.04
+    cpu: 4
+    memory_mb: 16384
+    role: db
+    disks:
+      - label: root
+        size_gb: 40
+        type: ssd
+      - label: data
+        size_gb: 200
+        type: ssd
+    nics:
+      - network: pg-db
+        ip: 10.0.30.11
+    services:
+      - postgresql
+    tags:
+      tier: db
+      app: demo-3tier

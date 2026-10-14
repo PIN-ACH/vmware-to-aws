@@ -1,0 +1,16 @@
+# Secrets & local state — never commit
+.env
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+# Generated artifacts (regenerated from spec.yaml; keep the source, not the output)
+terraform/workloads/*.tf.json
+ansible/generated/
+# Python
+__pycache__/
+*.pyc
+.venv/
+# OS / editor
+.DS_Store
+*.swp

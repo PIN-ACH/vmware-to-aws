@@ -1,0 +1,9 @@
+# Python toolchain for the control node (installed into the Docker image).
+# Pinned for reproducibility — bump deliberately.
+PyYAML==6.0.2
+Jinja2==3.1.4
+ansible-core==2.17.4
+boto3==1.35.0        # AWS SDK: used for AMI/SSM lookups, DMS helpers, validation
+botocore==1.35.0
+pyvmomi==8.0.3.0.1   # vSphere API (alternative/complement to govc for discovery)
+rich==13.7.1         # readable CLI output for the demo

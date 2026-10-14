@@ -1,0 +1,46 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# Single source of truth for environment-specific values. Nothing account- or
+# site-specific should be hardcoded in code or Terraform — it all lives here (or
+# in .env for secrets). This is what makes the project portable across accounts.
+# ─────────────────────────────────────────────────────────────────────────────
+
+project: demo-3tier
+
+aws:
+  region: eu-west-2            # London — required for AWS Transform availability
+  # Remote Terraform state (portable, CI-friendly). Set backend: local for a
+  # quick solo run with no S3 bucket.
+  state:
+    backend: s3               # s3 | local
+    bucket: ""                # e.g. my-company-tfstate-euw2  (fill in per account)
+    key: vmware2aws/terraform.tfstate
+    dynamodb_lock_table: ""   # optional state-lock table; empty = no lock
+
+network:
+  vpc_cidr: 10.0.0.0/16
+  # Subnet CIDRs are derived per discovered network zone; override here if needed.
+
+# AWS Transform (live discovery + IaC generation). Interface specifics are
+# tracked in docs/aws-transform.md until confirmed against the account.
+transform:
+  enabled: true
+  mode: live                  # live | replay (replay reads a captured result)
+  captured_result: sample-inventory/transform-result.json
+
+# Database Migration Service — replicates the actual DB data.
+dms:
+  enabled: true
+  engine: postgres
+  # Source endpoint. "reachable_from_aws" is the open question to verify later;
+  # if false at demo time, set source.mode: dump to use a staged dump instead.
+  source:
+    mode: live                # live | dump
+    host: ""                  # source Postgres host (reachable FROM the AWS VPC)
+    port: 5432
+    database: appdb
+    username: ""              # secret value belongs in .env, not here
+    reachable_from_aws: null  # true | false — confirm during network check
+    dump_file: sample-inventory/appdb.dump   # used when mode: dump
+  target:
+    # Target is the migrated db01 EC2 Postgres (or RDS if we switch later).
+    database: appdb
