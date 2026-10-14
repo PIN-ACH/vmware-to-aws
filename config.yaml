@@ -20,6 +20,21 @@ network:
   vpc_cidr: 10.0.0.0/16
   # Subnet CIDRs are derived per discovered network zone; override here if needed.
 
+# Discovery: which ESXi host to read and which VMs to select for migration.
+# Standalone ESXi host → datacenter is "ha-datacenter". Connection credentials
+# (GOVC_URL/USERNAME/PASSWORD/INSECURE) live in .env, not here.
+discovery:
+  source: govc                # govc | transform
+  esxi_host: sd-wro-esxi-rhos-1.intive.org
+  datacenter: ha-datacenter
+  # Allow-list of VM names to migrate. Empty list = everything in scope.
+  include:
+    - Migratin_test-new
+  exclude: []
+  # Where discovery writes its raw output and the normalized spec.
+  raw_output: sample-inventory/discovered-raw.json
+  spec_output: sample-inventory/spec.yaml
+
 # AWS Transform (live discovery + IaC generation). Interface specifics are
 # tracked in docs/aws-transform.md until confirmed against the account.
 transform:
