@@ -3,6 +3,7 @@
 PyYAML==6.0.2
 Jinja2==3.1.4
 ansible-core==2.17.4
+ansible-lint==24.9.2   # lints the Ansible roles (make lint)
 boto3==1.35.0        # AWS SDK: used for AMI/SSM lookups, DMS helpers, validation
 botocore==1.35.0
 pyvmomi==8.0.3.0.1   # vSphere API (alternative/complement to govc for discovery)
