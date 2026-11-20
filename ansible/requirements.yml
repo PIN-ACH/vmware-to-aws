@@ -1,0 +1,9 @@
+---
+# Ansible collections used by the roles. Pinned for reproducibility
+# (compatible with ansible-core 2.17.x). Installed in the Dockerfile; to install
+# manually: ansible-galaxy collection install -r ansible/requirements.yml
+collections:
+  - name: community.general
+    version: 9.4.0
+  - name: community.postgresql
+    version: 3.5.0

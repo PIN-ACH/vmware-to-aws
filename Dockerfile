@@ -48,6 +48,11 @@ RUN set -eux; \
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+# --- Ansible collections (pinned in ansible/requirements.yml) -----------------
+COPY ansible/requirements.yml /tmp/ansible-requirements.yml
+RUN ansible-galaxy collection install -r /tmp/ansible-requirements.yml \
+    && rm /tmp/ansible-requirements.yml
+
 WORKDIR /work
 # Default to an interactive shell; the Makefile targets are the real entrypoints.
 CMD ["/bin/bash"]
