@@ -1,0 +1,28 @@
+---
+# Master playbook. Order matters: baseline on every host first, then tier roles.
+# Run: ansible-playbook -i inventory.ini site.yml
+
+- name: Baseline configuration for every migrated host
+  hosts: all
+  become: true
+  gather_facts: true
+  roles:
+    - baseline
+
+- name: Web tier
+  hosts: web
+  become: true
+  roles:
+    - web
+
+- name: App tier
+  hosts: app
+  become: true
+  roles:
+    - app
+
+- name: Database tier
+  hosts: db
+  become: true
+  roles:
+    - db

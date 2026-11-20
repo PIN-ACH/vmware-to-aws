@@ -1,0 +1,41 @@
+---
+# Database tier: PostgreSQL. This is the role whose DATA is later populated by
+# AWS DMS (the engine installs/configures the empty DB here; DMS replicates the
+# rows). Creates the target database so the DMS target endpoint has somewhere to
+# land.
+
+- name: Install PostgreSQL (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - postgresql
+      - postgresql-contrib
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install PostgreSQL (RedHat/RHEL)
+  ansible.builtin.dnf:
+    name:
+      - postgresql-server
+      - postgresql-contrib
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Initialize PostgreSQL data dir (RedHat/RHEL only)
+  ansible.builtin.command:
+    cmd: postgresql-setup --initdb
+    creates: /var/lib/pgsql/data/PG_VERSION
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure PostgreSQL is running
+  ansible.builtin.service:
+    name: "{{ 'postgresql' if ansible_os_family == 'Debian' else 'postgresql' }}"
+    state: started
+    enabled: true
+
+- name: Create target database for DMS to populate
+  become: true
+  become_user: postgres
+  community.postgresql.postgresql_db:
+    name: "{{ target_database | default('appdb') }}"
+    state: present
+  ignore_errors: true   # community.postgresql may be absent on a minimal run

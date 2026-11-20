@@ -1,0 +1,54 @@
+---
+# Baseline: applied to EVERY migrated host regardless of role. This is the
+# "post-migration hygiene" layer — proves connectivity and leaves each instance
+# in a known, managed state. OS-aware (Debian/Ubuntu + RedHat/RHEL).
+
+- name: Set timezone to UTC
+  community.general.timezone:
+    name: Etc/UTC
+  ignore_errors: true   # community.general may be absent on a minimal run
+
+- name: Update apt cache (Debian/Ubuntu)
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+  when: ansible_os_family == "Debian"
+
+- name: Ensure baseline packages (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name:
+      - htop
+      - curl
+      - unzip
+      - chrony
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Ensure baseline packages (RedHat/RHEL)
+  ansible.builtin.dnf:
+    name:
+      - htop
+      - curl
+      - unzip
+      - chrony
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Ensure chrony (time sync) is running
+  ansible.builtin.service:
+    name: chronyd
+    state: started
+    enabled: true
+  ignore_errors: true   # service name differs on some images (chrony vs chronyd)
+
+- name: Write a migration marker file
+  ansible.builtin.copy:
+    dest: /etc/vmware2aws-migrated
+    content: |
+      Migrated from VMware by vmware-to-aws engine.
+      host: {{ inventory_hostname }}
+      role: {{ group_names | difference(['all']) | first | default('unknown') }}
+      configured_at: {{ ansible_date_time.iso8601 }}
+    owner: root
+    group: root
+    mode: "0644"

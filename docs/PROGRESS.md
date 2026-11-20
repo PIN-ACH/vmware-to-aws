@@ -55,7 +55,7 @@ Discover VMware (ESXi/vCenter) VMs → rebuild them on AWS as Terraform + Ansibl
 
 ## Build order (next)
 1. ~~Terraform landing zone~~ ✅ done & validated
-2. ~~`generate.py` (spec → TF workloads + Ansible)~~ ✅ built; produces valid JSON, correct sizing, no nested interpolations. NEEDS `terraform validate` in-container against workloads.tf.json.
+2. ~~`generate.py` (spec → TF workloads + Ansible)~~ ✅ DONE & VALIDATED in-container: `terraform init -backend=false` + `terraform validate` → "Success! The configuration is valid." Full spec→generate→valid-Terraform path proven.
 3. Ansible roles (web/app/db) ← current
 4. DMS module + `dms_migrate.py`
 5. `discover.py` / `normalize.py` (+ AWS Transform seam) — target real VM `Migratin_test-new`

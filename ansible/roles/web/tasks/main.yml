@@ -1,0 +1,32 @@
+---
+# Web tier: nginx serving a simple page that proves the migrated web host is up.
+
+- name: Install nginx (Debian/Ubuntu)
+  ansible.builtin.apt:
+    name: nginx
+    state: present
+  when: ansible_os_family == "Debian"
+
+- name: Install nginx (RedHat/RHEL)
+  ansible.builtin.dnf:
+    name: nginx
+    state: present
+  when: ansible_os_family == "RedHat"
+
+- name: Deploy landing page
+  ansible.builtin.copy:
+    dest: /var/www/html/index.html
+    content: |
+      <!doctype html>
+      <title>Migrated to AWS</title>
+      <h1>{{ inventory_hostname }} — migrated from VMware to AWS</h1>
+      <p>Served by nginx on the re-platformed web tier.</p>
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Ensure nginx is running
+  ansible.builtin.service:
+    name: nginx
+    state: started
+    enabled: true
