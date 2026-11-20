@@ -46,7 +46,9 @@ RUN set -eux; \
 
 # --- Python deps (engine + ansible) ------------------------------------------
 COPY requirements.txt /tmp/requirements.txt
-RUN pip install --no-cache-dir -r /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt \
+    && pip check \
+    && ansible --version | head -1
 
 # --- Ansible collections (pinned in ansible/requirements.yml) -----------------
 COPY ansible/requirements.yml /tmp/ansible-requirements.yml
